@@ -2,24 +2,44 @@ import pymongo
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
-from bson import ObjectId
+from bson import ObjectId, Timestamp
 
-# Función para convertir ObjectId a string
-def convert_objectid(val):
+# Mapeo de tipos de Python a tipos de MongoDB
+tipo_mongo = {
+    'str': 'String',
+    'int': 'Int32',
+    'float': 'Double',
+    'bool': 'Boolean',
+    'ObjectId': 'ObjectId',
+    'datetime': 'Date',
+    'Timestamp': 'Timestamp',  # Agregado para manejar Timestamp de BSON
+    # Añade más mapeos según sea necesario
+}
+
+# Función para obtener el tipo de MongoDB
+def get_mongo_type(val):
     if isinstance(val, ObjectId):
-        return str(val)
-    return val
-
-# Función para convertir estructuras de datos complejas a string
-def convert_complex_to_string(val):
-    if isinstance(val, (dict, list)):
-        return str(val)
-    return val
+        return 'ObjectId'
+    elif isinstance(val, Timestamp):
+        return 'Timestamp'
+    else:
+        python_type = type(val).__name__
+        return tipo_mongo.get(python_type, python_type)
 
 # Función para analizar de manera recursiva campos anidados
 def parse_nested_fields(document, prefix=''):
     fields = {}
     for key, value in document.items():
+        value_type = get_mongo_type(value)
+
+        if isinstance(value, (ObjectId, Timestamp)):
+            value_example = str(value)
+        elif isinstance(value, (dict, list)):
+            value_example = str(value)
+            value_type = 'String'
+        else:
+            value_example = value
+
         if isinstance(value, dict):
             nested_fields = parse_nested_fields(value, prefix=prefix + key + '.')
             fields.update(nested_fields)
@@ -27,9 +47,7 @@ def parse_nested_fields(document, prefix=''):
             nested_fields = parse_nested_fields(value[0], prefix=prefix + key + '.')
             fields.update(nested_fields)
         else:
-            value = convert_objectid(value)
-            value = convert_complex_to_string(value)
-            fields[prefix + key] = {'type': str(type(value).__name__), 'example': value}
+            fields[prefix + key] = {'type': value_type, 'example': value_example}
     return fields
 
 # Conexión a MongoDB
@@ -40,38 +58,35 @@ db = client["dummy-db"]
 wb = Workbook()
 wb.remove(wb.active)  # Remover la hoja por defecto si no se va a utilizar
 
-# Bandera para verificar si se ha añadido alguna hoja
-hoja_agregada = False
+# Ordenar las colecciones alfabéticamente
+collection_names = sorted(db.list_collection_names())
 
-for collection_name in db.list_collection_names():
+for collection_name in collection_names:
     collection = db[collection_name]
     
     # Analizar los documentos para obtener la estructura de los campos
     fields = {}
-    for document in collection.find().limit(100):  # Limita la cantidad para el ejemplo
+    for document in collection.find().limit(100):
         nested_fields = parse_nested_fields(document)
         for key, value in nested_fields.items():
             if key not in fields:
                 fields[key] = value
 
+    # Ordenar los campos alfabéticamente antes de crear el DataFrame
+    sorted_fields = dict(sorted(fields.items()))
+
     # Si no hay campos, pasa a la siguiente colección
-    if not fields:
+    if not sorted_fields:
         continue
 
     # Crear DataFrame para la colección
-    df = pd.DataFrame.from_dict(fields, orient='index').reset_index()
+    df = pd.DataFrame.from_dict(sorted_fields, orient='index').reset_index()
     df.columns = ['field', 'type', 'example']
 
     # Agregar hoja al archivo de Excel
     sheet = wb.create_sheet(title=collection_name)
     for r in dataframe_to_rows(df, index=False, header=True):
         sheet.append(r)
-    
-    hoja_agregada = True
-
-# Verificar si se ha agregado al menos una hoja
-if not hoja_agregada:
-    wb.create_sheet(title="Sheet1")
 
 # Guardar el archivo de Excel
 wb.save('MongoDB_Documentation.xlsx')
