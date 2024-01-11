@@ -48,7 +48,7 @@ def parse_nested_fields(document, prefix=''):
             nested_fields = parse_nested_fields(value[0], prefix=prefix + key + '.')
             fields.update(nested_fields)
         else:
-            fields[prefix + key] = {'type': value_type, 'example': value_example}
+            fields[prefix + key] = {'type': value_type, 'example': value_example, 'comments': ' '}
     return fields
 
 # Función para obtener información de los índices de una colección
@@ -58,7 +58,7 @@ def get_indices_info(collection):
     for name, index in indices.items():
         index_fields = ', '.join([f'{k}: {v}' for k, v in index['key']])
         index_type = 'Unique' if index.get('unique', False) else 'Standard'
-        indices_info.append({'name': name, 'type': index_type, 'fields': index_fields})
+        indices_info.append({'name': name, 'type': index_type, 'fields': index_fields, 'comments': ' '})
     return indices_info
 
 # Función para aplicar bordes a todas las celdas de un rango
@@ -102,7 +102,7 @@ for collection_name in collection_names:
 
     # Crear DataFrame para la colección
     df = pd.DataFrame.from_dict(sorted_fields, orient='index').reset_index()
-    df.columns = ['field', 'type', 'example']
+    df.columns = ['field', 'type', 'example', 'comments']
 
     # Obtener información de los índices
     indices_info = get_indices_info(collection)
@@ -154,16 +154,17 @@ for collection_name in collection_names:
 
         # Aplicar bordes a la tabla de índices
         if indexes_start_row <= indexes_end_row:
-            set_border(sheet, f'A{indexes_start_row}:C{indexes_end_row}')
+            set_border(sheet, f'A{indexes_start_row}:D{indexes_end_row}')
 
     # Aplicar bordes a la tabla de campos
     if fields_start_row <= fields_end_row:
-        set_border(sheet, f'A{fields_start_row}:C{fields_end_row}')
+        set_border(sheet, f'A{fields_start_row}:D{fields_end_row}')
 
-    # Establecer un ancho fijo para las columnas A, B y C
+    # Establecer un ancho fijo para las columnas A, B, C y D
     sheet.column_dimensions['A'].width = 120 / 7  # Aproximadamente 120 píxeles
     sheet.column_dimensions['B'].width = 60 / 7   # Aproximadamente 60 píxeles
     sheet.column_dimensions['C'].width = 200 / 7  # Aproximadamente 200 píxeles
+    sheet.column_dimensions['D'].width = 100 / 7  # Aproximadamente 100 píxeles
 
     # Justificar a la izquierda todas las celdas de la columna 'C' excepto los encabezados
     for row in sheet.iter_rows(min_col=3, max_col=3, min_row=1, max_row=sheet.max_row):
