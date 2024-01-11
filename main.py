@@ -160,13 +160,10 @@ for collection_name in collection_names:
     if fields_start_row <= fields_end_row:
         set_border(sheet, f'A{fields_start_row}:C{fields_end_row}')
 
-    # Ajustar el ancho de las columnas A y B automáticamente
-    for col in ['A', 'B']:
-        max_length = max(len(str(cell.value)) for cell in sheet[col] if cell.value)
-        sheet.column_dimensions[col].width = max_length + 2
-
-    # Establecer un ancho fijo para la columna C
-    sheet.column_dimensions['C'].width = 200 / 7  # Excel mide el ancho en unidades de caracteres
+    # Establecer un ancho fijo para las columnas A, B y C
+    sheet.column_dimensions['A'].width = 120 / 7  # Aproximadamente 120 píxeles
+    sheet.column_dimensions['B'].width = 60 / 7   # Aproximadamente 60 píxeles
+    sheet.column_dimensions['C'].width = 200 / 7  # Aproximadamente 200 píxeles
 
     # Justificar a la izquierda todas las celdas de la columna 'C' excepto los encabezados
     for row in sheet.iter_rows(min_col=3, max_col=3, min_row=1, max_row=sheet.max_row):
