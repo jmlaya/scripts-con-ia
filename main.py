@@ -111,7 +111,7 @@ for collection_name in collection_names:
     # Agregar hoja al archivo de Excel
     sheet = wb.create_sheet(title=collection_name)
     
-    # Estilo para los títulos de las secciones y los encabezados de las tablas
+    # Estilos para los títulos de las secciones y los encabezados de las tablas
     section_title_font = Font(bold=True, size=12)
     header_fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
     header_font = Font(color="FFFFFF", bold=True)
@@ -159,6 +159,12 @@ for collection_name in collection_names:
     # Aplicar bordes a la tabla de campos
     if fields_start_row <= fields_end_row:
         set_border(sheet, f'A{fields_start_row}:C{fields_end_row}')
+
+    # Justificar a la izquierda todas las celdas de la columna 'C' excepto los encabezados
+    for row in sheet.iter_rows(min_col=3, max_col=3, min_row=1, max_row=sheet.max_row):
+        for cell in row:
+            if cell.row not in [fields_title_row + 1, indexes_title_row + 1]:
+                cell.alignment = Alignment(horizontal='left')
 
 # Guardar el archivo de Excel
 wb.save('MongoDB_Documentation.xlsx')
