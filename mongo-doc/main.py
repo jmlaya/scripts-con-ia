@@ -1,5 +1,6 @@
 import pymongo
 import pandas as pd
+import argparse
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
@@ -72,9 +73,17 @@ def set_border(ws, cell_range):
         for cell in row:
             cell.border = thin_border
 
+# Analizar argumentos de la línea de comandos
+parser = argparse.ArgumentParser(description="Generate MongoDB documentation")
+parser.add_argument("database", help="Name of the MongoDB database")
+parser.add_argument("--connection_string", default="mongodb://localhost:27017", help="MongoDB connection string")
+parser.add_argument("--output", default="mongo-doc.xlsx", help="Output Excel file name")
+
+args = parser.parse_args()
+
 # Conexión a MongoDB
-client = pymongo.MongoClient("mongodb://127.0.0.1:27017")
-db = client["dummy-db"]
+client = pymongo.MongoClient(args.connection_string)
+db = client[args.database]
 
 # Crear un archivo de Excel
 wb = Workbook()
@@ -173,4 +182,4 @@ for collection_name in collection_names:
                 cell.alignment = Alignment(horizontal='left')
 
 # Guardar el archivo de Excel
-wb.save('MongoDB_Documentation.xlsx')
+wb.save(args.output)
