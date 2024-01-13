@@ -1,4 +1,5 @@
 import json
+import argparse
 
 # Función para cargar datos JSON desde un archivo
 def cargar_json_desde_archivo(ruta_archivo):
@@ -38,14 +39,16 @@ def crear_markdown_desde_json(json_data, ruta_salida):
     with open(ruta_salida, 'w') as archivo:
         archivo.write(contenido_markdown)
 
-# Ruta al archivo JSON
-ruta_json = './conversacion.json'
+# Configuración del analizador de argumentos
+parser = argparse.ArgumentParser(description='Procesar y convertir conversaciones de JSON a Markdown.')
+parser.add_argument('-i', '--input', default='./conversacion.json', help='Ruta al archivo JSON de entrada (default: ./conversacion.json)')
+parser.add_argument('-o', '--output', default='./conversacion.md', help='Ruta al archivo Markdown de salida (default: ./conversacion.md)')
+
+# Parseo de argumentos
+args = parser.parse_args()
 
 # Cargar los datos JSON
-data_json = cargar_json_desde_archivo(ruta_json)
-
-# Ruta para el archivo Markdown de salida
-ruta_md_salida = './conversacion.md'
+data_json = cargar_json_desde_archivo(args.input)
 
 # Crear el archivo Markdown
-crear_markdown_desde_json(data_json, ruta_md_salida)
+crear_markdown_desde_json(data_json, args.output)
